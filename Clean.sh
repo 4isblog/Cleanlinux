@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 清理Linux和宝塔面板隐私日志脚本
-# 使用方法: sudo bash clean_privacy_logs.sh
+# 使用方法: sudo bash clean.sh
 
 # 颜色定义
 RED='\033[0;31m'
@@ -51,9 +51,17 @@ if [ -d "/www/server/panel" ]; then
 
     # 清理数据库中的操作日志
     if [ -f "/www/server/panel/data/default.db" ]; then
-        sqlite3 /www/server/panel/data/default.db "DELETE FROM logs;" 2>/dev/null
-        sqlite3 /www/server/panel/data/default.db "DELETE FROM system;" 2>/dev/null
-        sqlite3 /www/server/panel/data/default.db "VACUUM;" 2>/dev/null
+        cd /www/server/panel
+        python3 -c "
+import sqlite3
+conn = sqlite3.connect('/www/server/panel/data/default.db')
+cursor = conn.cursor()
+cursor.execute('DELETE FROM logs')
+cursor.execute('DELETE FROM binding')
+conn.commit()
+conn.execute('VACUUM')
+conn.close()
+" 2>/dev/null
         echo "宝塔面板日志和数据库记录已清理"
     else
         echo "宝塔面板日志已清理"
