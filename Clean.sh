@@ -68,12 +68,24 @@ if os.path.exists('/www/server/panel/data/db/log.db'):
     conn.execute('VACUUM')
     conn.close()
 
-# 清理 default.db
+# 清理 default.db（旧位置）
 if os.path.exists('/www/server/panel/data/default.db'):
     conn = sqlite3.connect('/www/server/panel/data/default.db')
     cursor = conn.cursor()
     cursor.execute('DELETE FROM logs')
     cursor.execute('DELETE FROM binding')
+    conn.commit()
+    conn.execute('VACUUM')
+    conn.close()
+
+# 清理 db/default.db（新位置 - 包含登录日志）
+if os.path.exists('/www/server/panel/data/db/default.db'):
+    conn = sqlite3.connect('/www/server/panel/data/db/default.db')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM logs')
+    cursor.execute('DELETE FROM binding')
+    cursor.execute('DELETE FROM ssh_login_record')
+    cursor.execute('DELETE FROM temp_login')
     conn.commit()
     conn.execute('VACUUM')
     conn.close()
