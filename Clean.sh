@@ -48,7 +48,16 @@ if [ -d "/www/server/panel" ]; then
     > /www/server/panel/logs/error.log 2>/dev/null
     > /www/server/panel/logs/request.log 2>/dev/null
     rm -f /www/server/panel/logs/*.log 2>/dev/null
-    echo "宝塔面板日志已清理"
+
+    # 清理数据库中的操作日志
+    if [ -f "/www/server/panel/data/default.db" ]; then
+        sqlite3 /www/server/panel/data/default.db "DELETE FROM logs;" 2>/dev/null
+        sqlite3 /www/server/panel/data/default.db "DELETE FROM system;" 2>/dev/null
+        sqlite3 /www/server/panel/data/default.db "VACUUM;" 2>/dev/null
+        echo "宝塔面板日志和数据库记录已清理"
+    else
+        echo "宝塔面板日志已清理"
+    fi
 else
     echo "未检测到宝塔面板"
 fi
