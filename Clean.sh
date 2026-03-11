@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 清理Linux和宝塔面板隐私日志脚本
-# 使用方法: sudo bash clean.sh
+# 使用方法: sudo bash clean_privacy_logs.sh
 
 # 颜色定义
 RED='\033[0;31m'
@@ -50,17 +50,33 @@ if [ -d "/www/server/panel" ]; then
     rm -f /www/server/panel/logs/*.log 2>/dev/null
 
     # 清理数据库中的操作日志
-    if [ -f "/www/server/panel/data/default.db" ]; then
+    if [ -d "/www/server/panel/data/db" ]; then
         cd /www/server/panel
         python3 -c "
 import sqlite3
-conn = sqlite3.connect('/www/server/panel/data/default.db')
-cursor = conn.cursor()
-cursor.execute('DELETE FROM logs')
-cursor.execute('DELETE FROM binding')
-conn.commit()
-conn.execute('VACUUM')
-conn.close()
+import os
+
+# 清理 log.db（操作日志）
+if os.path.exists('/www/server/panel/data/db/log.db'):
+    conn = sqlite3.connect('/www/server/panel/data/db/log.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT name FROM sqlite_master WHERE type=\"table\"')
+    tables = cursor.fetchall()
+    for table in tables:
+        cursor.execute(f'DELETE FROM {table[0]}')
+    conn.commit()
+    conn.execute('VACUUM')
+    conn.close()
+
+# 清理 default.db
+if os.path.exists('/www/server/panel/data/default.db'):
+    conn = sqlite3.connect('/www/server/panel/data/default.db')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM logs')
+    cursor.execute('DELETE FROM binding')
+    conn.commit()
+    conn.execute('VACUUM')
+    conn.close()
 " 2>/dev/null
         echo "宝塔面板日志和数据库记录已清理"
     else
