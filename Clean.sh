@@ -150,5 +150,59 @@ echo -e "\n${GREEN}[8/8] 清理其他日志...${NC}"
 journalctl --vacuum-time=1s 2>/dev/null
 echo "其他日志已清理"
 
+# 9. 最后再次清理本次执行记录
+echo -e "\n${GREEN}[9/9] 清理本次脚本执行记录...${NC}"
+sleep 1
+history -c
+> ~/.bash_history
+> /root/.bash_history
+for user_home in /home/*; do
+    if [ -d "$user_home" ]; then
+        > "$user_home/.bash_history" 2>/dev/null
+    fi
+done
+
+# 再次清理系统日志（清除脚本执行记录）
+> /var/log/messages 2>/dev/null
+> /var/log/syslog 2>/dev/null
+> /var/log/auth.log 2>/dev/null
+> /var/log/secure 2>/dev/null
+journalctl --vacuum-time=1s 2>/dev/null
+
+# 再次清理宝塔面板数据库日志
+if [ -d "/www/server/panel/data/db" ]; then
+    python3 -c "
+import sqlite3
+import os
+
+if os.path.exists('/www/server/panel/data/db/log.db'):
+    conn = sqlite3.connect('/www/server/panel/data/db/log.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT name FROM sqlite_master WHERE type=\"table\"')
+    tables = cursor.fetchall()
+    for table in tables:
+        cursor.execute(f'DELETE FROM {table[0]}')
+    conn.commit()
+    conn.execute('VACUUM')
+    conn.close()
+
+if os.path.exists('/www/server/panel/data/db/default.db'):
+    conn = sqlite3.connect('/www/server/panel/data/db/default.db')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM logs')
+    cursor.execute('DELETE FROM ssh_login_record')
+    cursor.execute('DELETE FROM temp_login')
+    conn.commit()
+    conn.execute('VACUUM')
+    conn.close()
+" 2>/dev/null
+fi
+
+echo "脚本执行记录已清理"
+
 echo -e "\n${YELLOW}=== 清理完成 ===${NC}"
 echo -e "${GREEN}所有隐私日志已清理完毕！${NC}"
+
+# 清理当前shell的历史记录（不留痕迹）
+history -c
+unset HISTFILE
